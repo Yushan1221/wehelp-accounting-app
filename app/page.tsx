@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 export default function Home() {
@@ -7,10 +8,17 @@ export default function Home() {
         <h2 className="w-full text-2xl font-medium text-center sm:text-left">歡迎來到
           <span className="block sm:inline mt-4 am:mt-0 text-5xl font-semibold"> 記帳小本本</span>
         </h2>
-        
+
+        <Image
+          src="/accounting.png"
+          width={512}
+          height={512}
+          className="w-60"
+          alt="accounting icon"
+        />
         <div className="flex justify-center flex-row gap-4 text-base font-medium">
           <Link
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-button px-5 text-font transition-colors hover:bg-button-hover md:w-[158px]"
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary px-5 text-font transition-colors hover:bg-primary-dark md:w-[158px]"
             href="/accounting"
           >
             開始記帳
