@@ -7,6 +7,7 @@
   --font-color: #352424;
   --button-bg: #ab703f;
   --button-hover: #985b29;
+  --s-bg: #d4af6a;
 }
 
 @theme inline {
@@ -15,6 +16,7 @@
   --color-font: var(--font-color);
   --color-primary: var(--button-bg);
   --color-primary-dark: var(--button-hover);
+  --color-second: #d4af6a; 
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);

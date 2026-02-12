@@ -1,49 +1,72 @@
 "use client";
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { PlusIcon, MinusIcon, TrashIcon } from "@heroicons/react/20/solid";
-
-type TransactionType = "income" | "expense";
-
-interface Transaction {
-  id: number;
-  text: string; // 項目名稱
-  amount: number; // 金額
-  type: TransactionType; // 收入 or 支出
-}
+import AccountingForm from "./form";
+import AccountingList from "./list";
+import { Transaction } from "@/app/lib/definitions";
+import { useAuth } from "@/app/lib/auth-context";
+import { db } from "@/app/lib/firebase";
+import {
+  collection,
+  query,
+  where,
+  onSnapshot,
+  orderBy,
+} from "firebase/firestore";
 
 export default function Page() {
+  const { user, loading } = useAuth();
+  const [listLoading, setListLoading] = useState(true);
+  const router = useRouter();
   const [transactions, setTransactions] = useState<Transaction[]>([]); // 紀帳列表
-  const [type, setType] = useState<TransactionType>("income"); // 收入、支出狀態
-  const [inputName, setInputName] = useState(""); // 項目名稱狀態
-  const [inputAmount, setInputAmount] = useState(""); // 項目金額狀態
 
-  // 新增帳目
-  function handleAddTransaction() {
-    if (!inputName || !inputAmount) return alert("請輸入項目和金額！");
+  // 未登入便踢回首頁
+  useEffect(() => {
+    if (!loading && !user) {
+      router.replace("/");
+    }
+  }, [user, loading, router]);
 
-    const newTransaction: Transaction = {
-      id: Date.now(),
-      text: inputName,
-      amount: Number(inputAmount),
-      type: type,
-    };
+  // 初始獲取 Firestore 資料以及即時更新
+  useEffect(() => {
+    // 只有在 user 存在時才啟動
+    if (!user) return;
 
-    // 更新狀態: 記帳列表
-    setTransactions([...transactions, newTransaction]);
-    console.log(newTransaction.id);
-    // 清空狀態
-    setInputName("");
-    setInputAmount("");
-  }
+    // 建立查詢
+    const q = query(
+      collection(db, "Transactions"),
+      where("userId", "==", user.uid),
+      orderBy("createdAt", "desc"),
+    );
 
-  // 刪除帳目
-  function handleDelete(id: number) {
-    // 過濾掉id相同那欄，只留id不同的
-    const newList = transactions.filter((t) => t.id !== id);
-    setTransactions(newList);
-  }
+    // onSnapshot 可以即時更新，如果資料庫有變動就會啟動，會回傳一個停止監聽的函式 unsubscribe
+    const unsubscribe = onSnapshot(
+      q,
+      (querySnapshot) => {
+        const list: Transaction[] = [];
+        querySnapshot.forEach((doc) => {
+          list.push({
+            id: doc.id,
+            ...doc.data(),
+          } as unknown as Transaction);
+        });
+
+        // 更新本地狀態
+        setTransactions(list);
+
+        // 資料更新結束
+        setListLoading(false);
+      },
+      (error) => {
+        console.error("讀取資料失敗：", error);
+        setListLoading(false);
+      },
+    );
+
+    // 清理函數
+    return () => unsubscribe();
+  }, [user]);
 
   // 計算總額
   const totalBalance = transactions.reduce((acc, item) => {
@@ -60,92 +83,54 @@ export default function Page() {
     return item.type === "income" ? acc + item.amount : acc;
   }, 0);
 
+  if (loading)
+    return (
+      <div className="flex justify-center item-center p-10">讀取中...</div>
+    );
+  if (!user) return null;
+
   return (
     <div className="flex min-h-screen items-center justify-center font-sans bg-neutral-700">
       <div className="flex min-h-screen w-full max-w-2xl flex-col items-center justify-start gap-4 py-32 px-6 bg-background sm:px-16">
-        <h2 className="w-full text-2xl font-medium text-center mb-4">開始我的記帳</h2>
-        
-        <div className="h-16 flex justify-between items-center w-full border-y-2 py-2 text-md sm:text-lg">
-          <select
-            className="h-full px-1 sm:px-4 mr-2 bg-foreground rounded-md text-primary font-bold"
-            value={type}
-            onChange={(e) => {
-              setType(e.target.value as "income" | "expense");
-            }}
-          >
-            <option value="income">收入</option>
-            <option value="expense">支出</option>
-          </select>
+        <h2 className="w-full text-2xl font-medium text-center mb-4">
+          開始我的記帳
+        </h2>
 
-          <div className="flex w-full h-full justify-between mr-4 ">
-            <input
-              className="h-full px-1 w-24 sm:w-48 sm:px-4"
-              type="text"
-              placeholder="輸入項目"
-              value={inputName}
-              onChange={(e) => {
-                setInputName(e.target.value);
-              }}
-            />
-
-            <input
-              className="h-full px-1 w-18 sm:w-36 sm:px-4"
-              type="number"
-              placeholder="輸入金額"
-              value={inputAmount}
-              onChange={(e) => {
-                setInputAmount(e.target.value);
-              }}
-            />
-          </div>
-
-          <div
-            className="flex h-12 items-center justify-center rounded-full bg-primary px-3 sm:px-5 text-font transition-colors hover:bg-primary-dark cursor-pointer"
-            onClick={() => handleAddTransaction()}
-          >
-            {type === "income" ? (
-              <PlusIcon className="size-8 font-bold" />
-            ) : (
-              <MinusIcon className="size-8 font-bold" />
-            )}
-          </div>
-        </div>
+        <AccountingForm
+          transactions={transactions}
+          setTransactions={setTransactions}
+        />
 
         <div className="flex justify-between items-center w-full border-b-2 py-2 text-md">
           <div>
-            支出: 
+            支出:
             <span className="ml-2 text-red-300">{totalExpense}</span>
           </div>
           <div>
-            收入: 
+            收入:
             <span className="ml-2 text-lime-200">{totalIncome}</span>
           </div>
           <div>
-            結餘: 
-            <span className={`ml-2 ${totalBalance < 0 ? "text-red-300" : "text-lime-200"}`}>{totalBalance}</span>
+            結餘:
+            <span
+              className={`ml-2 font-bold ${totalBalance < 0 ? "text-red-300" : "text-lime-200"}`}
+            >
+              {totalBalance}
+            </span>
           </div>
         </div>
 
-        <ul className="w-full">
-          {transactions.map((t) => (
-            <li key={t.id} className="w-full flex justify-between px-2 py-4 border-b-1 border-neutral-500">
-              <div className="flex justify-between font-bold w-full mr-6">
-                <p>{t.text}</p>
-                {t.type === "income" ? <p>$+{t.amount}</p> : <p>$-{t.amount}</p>}
-              </div>
-              
-              <div 
-                onClick={() => handleDelete(t.id)}
-                className="cursor-pointer hover:text-primary transition-colors"
-              >
-                <TrashIcon className="size-6" />
-              </div>
-            </li>
-          ))}
-          {transactions.length === 0 && (
-            <p className="text-center mt-4">還沒有紀錄，快記一筆吧！</p>
-          )}
-        </ul>
+        {listLoading ? (
+          <div className="text-center mt-4">
+            載入記帳列表中...
+          </div>
+        ) : (
+          <AccountingList
+            transactions={transactions}
+            setTransactions={setTransactions}
+          />
+        )}
+
         <div className="flex justify-center flex-row mt-4 gap-4 text-base font-medium">
           <Link
             className="flex h-12 w-full items-center justify-center rounded-full bg-primary px-5 text-font transition-colors hover:bg-primary-dark"
