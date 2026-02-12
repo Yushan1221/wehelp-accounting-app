@@ -87,6 +87,7 @@ export default function LoginForm() {
             onChange={(e) => setPassword(e.target.value)}
             type="password" 
             placeholder="請輸入密碼" 
+            minLength={6} 
             required />
         </div>
 

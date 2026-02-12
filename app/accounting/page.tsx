@@ -6,7 +6,8 @@ import AccountingForm from "./form";
 import AccountingList from "./list";
 import { Transaction } from "@/app/lib/definitions";
 import { useAuth } from "@/app/lib/auth-context";
-import { db } from "@/app/lib/firebase";
+import { db, auth } from "@/app/lib/firebase";
+import { signOut } from "firebase/auth";
 import {
   collection,
   query,
@@ -83,6 +84,24 @@ export default function Page() {
     return item.type === "income" ? acc + item.amount : acc;
   }, 0);
 
+  // 登出
+  const handleLogout = async () => {
+    const confirmed = window.confirm("確定要登出嗎？");
+    if (!confirmed) return;
+
+    try {
+      // 執行 firebase 登出
+      await signOut(auth);
+
+      // 返回首頁
+      router.push("/");
+    }
+    catch (error) {
+      console.error("登出發生錯誤：", error);
+      alert("登出失敗，請稍後再試");
+    }
+  }
+
   if (loading)
     return (
       <div className="flex justify-center item-center p-10">讀取中...</div>
@@ -131,13 +150,20 @@ export default function Page() {
           />
         )}
 
-        <div className="flex justify-center flex-row mt-4 gap-4 text-base font-medium">
+        <div className="flex justify-center items-center flex-row mt-4 gap-4 text-base font-medium">
           <Link
-            className="flex h-12 w-full items-center justify-center rounded-full bg-primary px-5 text-font transition-colors hover:bg-primary-dark"
+            className="flex h-12 items-center justify-center rounded-full bg-primary px-5 text-font transition-colors hover:bg-primary-dark"
             href="/"
           >
             回到首頁
           </Link>
+
+          <button
+            onClick={handleLogout}
+            className="flex h-12 items-center justify-center rounded-full bg-primary px-5 text-font transition-colors hover:bg-primary-dark cursor-pointer"
+          >
+            登出
+          </button>
         </div>
       </div>
     </div>
