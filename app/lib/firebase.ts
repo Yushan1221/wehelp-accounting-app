@@ -4,13 +4,13 @@ import { getFirestore } from "firebase/firestore";
 
 // Firebase Console 
 const firebaseConfig = {
-  apiKey: "AIzaSyBMGdRIpcRD9dq3jZ_edHQTbV0mhPLdVMU",
-  authDomain: "wehelp-accounting-app.firebaseapp.com",
-  projectId: "wehelp-accounting-app",
-  storageBucket: "wehelp-accounting-app.firebasestorage.app",
-  messagingSenderId: "15319281742",
-  appId: "1:15319281742:web:4390ba8053fa24e163d31f",
-  measurementId: "G-980KZJ2Y0H"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
 };
 
 // 初始化 Firebase
